@@ -4,7 +4,9 @@ import { execSync } from "node:child_process";
 
 loadEnvFile(path.resolve(".env"));
 
-if (!process.env.HOST) {
+// [::] is refused with EACCES on GoDaddy. Listen on IPv4 unless a real host is set.
+const configuredHost = process.env.HOST;
+if (!configuredHost || configuredHost === "::" || configuredHost === "[::]") {
   process.env.HOST = "0.0.0.0";
 }
 
