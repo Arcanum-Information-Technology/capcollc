@@ -5,6 +5,7 @@ import { useState } from "react";
 import { motion } from "framer-motion";
 import { Mail, Phone, MapPin, Clock, Send, CheckCircle2, Building2, Printer, Star } from "lucide-react";
 import { BRANCHES_DATA, HEAD_OFFICE_PHONE, HEAD_OFFICE_PHONE_DISPLAY } from "@/data/branches";
+import { sendContactMessage } from "@/lib/contact-email";
 
 export const Route = createFileRoute("/contact")({
   component: ContactPage,
@@ -20,6 +21,8 @@ const subjects = [
 
 function ContactPage() {
   const [submitted, setSubmitted] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState("");
   const [form, setForm] = useState({
     name: "", company: "", email: "", phone: "", subject: "", message: "",
   });
@@ -28,9 +31,22 @@ function ContactPage() {
     setForm(f => ({ ...f, [e.target.name]: e.target.value }));
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setSubmitted(true);
+    setError("");
+    setSubmitting(true);
+    try {
+      const result = await sendContactMessage({ data: form });
+      if (!result.ok) {
+        setError(result.error);
+        return;
+      }
+      setSubmitted(true);
+    } catch {
+      setError("We couldn't send your message. Please try again or call us.");
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   return (
@@ -84,6 +100,7 @@ function ContactPage() {
                     <button
                       onClick={() => {
                         setSubmitted(false);
+                        setError("");
                         setForm({ name: "", company: "", email: "", phone: "", subject: "", message: "" });
                       }}
                       className="btn-primary mt-8"
@@ -157,8 +174,18 @@ function ContactPage() {
                       />
                     </div>
 
-                    <button type="submit" className="btn-primary w-full justify-center text-base py-4">
-                      <Send className="h-4 w-4" /> Send Message
+                    {error && (
+                      <p className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700" role="alert">
+                        {error}
+                      </p>
+                    )}
+
+                    <button
+                      type="submit"
+                      disabled={submitting}
+                      className="btn-primary w-full justify-center text-base py-4 disabled:opacity-60"
+                    >
+                      <Send className="h-4 w-4" /> {submitting ? "Sending..." : "Send Message"}
                     </button>
                   </form>
                 )}
